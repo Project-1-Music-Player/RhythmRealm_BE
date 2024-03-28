@@ -13,9 +13,9 @@ import (
 )
 
 type Server struct {
-	port int
-
-	db database.Service
+	port         int
+	db           database.ScyllaService
+	musicService database.MinIOService
 }
 
 func NewServer() *http.Server {
@@ -23,7 +23,8 @@ func NewServer() *http.Server {
 	NewServer := &Server{
 		port: port,
 
-		db: database.New(),
+		db:           database.NewScylla(),
+		musicService: database.NewMinIO(),
 	}
 
 	// Declare Server config

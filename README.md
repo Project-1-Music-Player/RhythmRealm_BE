@@ -1,4 +1,4 @@
-# Project rr-backend
+# Rhytm Realm backend
 
 One Paragraph of project description goes here
 

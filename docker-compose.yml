@@ -1,16 +1,52 @@
-version: '3.8'
-
 services:
-  psql:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+  scylla:
+    image: scylladb/scylla
+    container_name: scylla
     ports:
-      - "${DB_PORT}:5432"
-    volumes:
-      - psql_volume:/var/lib/postgresql/data
+      - "9042:9042"
 
-volumes:
-  psql_volume:
+  # This is a temporary service that creates the schema and populates the scylla service and then this one shuts down
+  scylla-load-keyspace:
+    container_name: scylla-load-keyspace
+    image: scylladb/scylla
+    volumes:
+      - ./scylladb/create_schema.cql:/scylla_scripts/1.cql
+      - ./scylladb/populate_db.cql:/scylla_scripts/2.cql
+      - ./scylladb/initdb.sh:/scylla_scripts/initdb.sh
+    entrypoint: [ "bash", "/scylla_scripts/initdb.sh" ]
+  minio:
+    image: minio/minio
+    container_name: minio
+    volumes:
+      - ./data/rhythm-bucket:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: minio123
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      start_period: 5s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  mc:
+    image: minio/mc
+    container_name: mc
+    hostname: mc
+    environment:
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio123
+      - AWS_REGION=us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc config host add minio http://minio:9000 minio minio123) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc mb minio/music;
+      /usr/bin/mc policy set public minio/music;
+      exit 0;
+      "    
+    depends_on:
+      minio:
+        condition: service_healthy 

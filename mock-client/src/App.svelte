@@ -18,14 +18,16 @@
   <div class="card">
     <Counter />
   </div>
-
+  <div>
+    <button on:click={() => {window.location.href = 'http://localhost:3000/auth/google'}}>Login with Google</button>
+  </div>
   <p>
     Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
   </p>
 
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
+  <audio id="audioPlayer" src="localhost:3000/music/heartless.flac" controls preload="none">
+    Your browser does not support the audio element.
+  </audio>
 </main>
 
 <style>
@@ -40,8 +42,5 @@
   }
   .logo.svelte:hover {
     filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
   }
 </style>
