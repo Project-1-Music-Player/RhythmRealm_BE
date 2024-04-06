@@ -3,24 +3,36 @@ package server
 import (
 	"net/http"
 
+	"rr-backend/internal/handlers"
+	mdw "rr-backend/internal/middleware"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/markbates/goth/gothic"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:5173"},
+		AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE, echo.OPTIONS},
+		AllowHeaders: []string{"Authorization", "Content-Type", "X-Requested-With"},
+	}))
 
 	e.GET("/", s.HelloWorldHandler)
 
-	e.GET("/:bucketName/:objectName", s.getMusic)
+	//	e.GET("/:bucketName/:objectName", s.getMusic)
 
 	e.GET("/health", s.healthHandler)
 	e.GET("/auth/:provider/callback", s.getAuthCallback)
 	e.GET("/logout", s.getLogout)
 	e.GET("/auth/:provider", s.getHandleAuth)
+	e.POST("/auth/google", handlers.UpsertUserHandler(s.db), mdw.JWTMiddleware)
+	e.POST("/music/upload", handlers.UploadMusicHandler(s.db, s.musicService), mdw.JWTMiddleware)
+	e.GET("/music", handlers.GetSongsByUser(s.db), mdw.JWTMiddleware)
 	return e
 }
 
@@ -32,23 +44,26 @@ func (s *Server) HelloWorldHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (s *Server) getMusic(c echo.Context) error {
-	bucketName := c.Param("bucketName")
-	objectName := c.Param("objectName")
-	o, err := s.musicService.StreamMusic(c, bucketName, objectName)
+// func (s *Server) getMusic(c echo.Context) error {
+// 	bucketName := c.Param("bucketName")
+// 	objectName := c.Param("objectName")
+// 	o, err := s.musicService.ServeMusic(c, bucketName, objectName)
 
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Error retrieving the object")
-	}
-	defer o.Close()
+// 	if err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "Error retrieving the object")
+// 	}
+// 	defer o.Close()
 
-	// Set the appropriate headers for audio content
-	c.Response().Header().Set(echo.HeaderContentType, "audio/mpeg")
-	c.Response().Header().Set(echo.HeaderContentDisposition, "inline; filename="+objectName)
+// 	objectInfo, err := o.Stat()
+// 	if err != nil {
+// 		return echo.NewHTTPError(http.StatusInternalServerError, "Error getting the object info")
+// 	}
 
-	// Use SendStream to stream the object to the response
-	return c.Stream(http.StatusOK, "audio/mpeg", o)
-}
+// 	// Use the helper function to serve the content
+// 	helper.ServeContent(c.Response().Writer, c.Request(), objectName, objectInfo.LastModified, o)
+
+// 	return nil
+// }
 
 func (s *Server) healthHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, s.db.Health())

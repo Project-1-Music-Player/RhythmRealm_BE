@@ -3,12 +3,17 @@ package database
 import (
 	"log"
 	"os"
+	"rr-backend/internal/models"
+	"time"
 
 	"github.com/gocql/gocql"
 )
 
 type ScyllaService interface {
 	Health() map[string]string
+	UpsertUser(userID, username, email, role string) error
+	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
+	GetSongsByUserID(userID string) ([]models.Song, error)
 }
 
 type scyllaService struct {
@@ -45,4 +50,39 @@ func (s *scyllaService) Health() map[string]string {
 	return map[string]string{
 		"message": "It's healthy",
 	}
+}
+
+func (s *scyllaService) UpsertUser(userID, username, email, role string) error {
+	query := `INSERT INTO users (user_id, username, email, role) VALUES (?, ?, ?, ?)`
+	if err := s.session.Query(query, userID, username, email, role).Exec(); err != nil {
+		log.Printf("Failed to upsert user: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error {
+	query := `INSERT INTO songs (song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	if err := s.session.Query(query, songID, title, userID, album, releaseDate, genre, songURL, thumbnailURL).Exec(); err != nil {
+		log.Printf("Failed to insert song: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) GetSongsByUserID(userID string) ([]models.Song, error) {
+	query := `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url FROM songs WHERE user_id = ?`
+	iter := s.session.Query(query, userID).Iter()
+
+	var songs []models.Song
+	var song models.Song
+	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL) {
+		songs = append(songs, song)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	return songs, nil
 }

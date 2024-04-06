@@ -9,7 +9,7 @@ import (
 func main() {
 	auth.NewAuth()
 	server := server.NewServer()
-
+	auth.InitFirebase()
 	fmt.Println("Server is running on port 3000")
 	err := server.ListenAndServe()
 	if err != nil {

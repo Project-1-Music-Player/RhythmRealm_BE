@@ -26,7 +26,6 @@ func NewServer() *http.Server {
 		db:           database.NewScylla(),
 		musicService: database.NewMinIO(),
 	}
-
 	// Declare Server config
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", NewServer.port),

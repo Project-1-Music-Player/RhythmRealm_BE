@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"io"
 	"log"
 
 	"github.com/labstack/echo/v4"
@@ -11,7 +12,8 @@ import (
 
 type MinIOService interface {
 	Health() map[string]string
-	StreamMusic(ctx echo.Context, bucketName, objectName string) (*minio.Object, error)
+	ServeMusic(ctx echo.Context, bucketName, objectName string) (*minio.Object, error)
+	UploadObject(bucketName, objectName string, reader io.Reader, objectSize int64, contentType string) (*minio.UploadInfo, error)
 }
 
 type minIOService struct {
@@ -51,11 +53,20 @@ func (s *minIOService) Health() map[string]string {
 	}
 }
 
-func (s *minIOService) StreamMusic(ctx echo.Context, bucketName, objectName string) (*minio.Object, error) {
+func (s *minIOService) ServeMusic(ctx echo.Context, bucketName, objectName string) (*minio.Object, error) {
 	obj, err := s.client.GetObject(ctx.Request().Context(), bucketName, objectName, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	return obj, nil
+}
+
+func (s *minIOService) UploadObject(bucketName, objectName string, reader io.Reader, objectSize int64, contentType string) (*minio.UploadInfo, error) {
+	opts := minio.PutObjectOptions{ContentType: contentType}
+	info, err := s.client.PutObject(context.Background(), bucketName, objectName, reader, objectSize, opts)
+	if err != nil {
+		return nil, err
+	}
+	return &info, nil
 }
