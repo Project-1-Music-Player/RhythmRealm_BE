@@ -3,7 +3,7 @@
   import viteLogo from '/vite.svg'
   import Counter from './lib/Counter.svelte'
   import type { User } from "firebase/auth";
-  import { auth, googleProvider, signInAnonymously, signInWithPopup } from './firebase'; // Ensure this path is correct
+  import { auth, googleProvider, signInAnonymously, signInWithPopup, signOut } from './firebase'; // Ensure this path is correct
   import { onMount } from 'svelte';
   let title: string | Blob, album: string | Blob, releaseDate: string | Blob, genre: string | Blob, songFile: string | Blob, thumbnailFile: string | Blob;
   let user: User | null = null;
@@ -53,6 +53,9 @@
     } catch (error) {
       console.error('Error fetching songs:', error);
     }
+  }
+  function streamUrl(songID: string) {
+    return `http://localhost:3000/music/stream/${songID}`;
   }
   async function handleUpload(event: Event) {
     event.preventDefault();
@@ -131,31 +134,36 @@
       console.error('Google sign-in failed:', error);
     }
   }
+  function handleSignOut() {
+    auth.signOut()
+      .then(() => {
+        user = null;
+        location.reload();
+        console.log('User signed out.');
+      })
+      .catch((err) => {
+        error = err;
+        console.error('Sign out failed:', error);
+      });
+  }
 </script>
 
 <main>
-  <div>
-    <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
 
   <div class="card">
     <Counter />
   </div>
   <div>
     <button on:click={handleGoogleSignIn}>Sign in with Google</button>
+    <button on:click={handleAnonymousSignIn}>Sign in Anonymously</button>
   </div>
   <p>
     Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
   </p>
   <h1>Firebase Auth with Svelte</h1>
   {#if user}
-    <p>Signed in as: {user.uid}</p>
+    <p>Signed in as: {user.displayName} ({user.uid})</p>
+    <button on:click={handleSignOut}>Sign Out</button>
     <form on:submit|preventDefault={handleUpload}>
       <input type="text" bind:value={title} placeholder="Title" required />
       <input type="text" bind:value={album} placeholder="Album" required />
@@ -173,13 +181,15 @@
           <p>Album: {song.album}</p>
           <p>Release Date: {song.releaseDate}</p>
           <p>Genre: {song.genre}</p>
-          <!-- Add more song details as needed -->
+          <audio controls>
+            <source src={streamUrl(song.song_id)} type="audio/mpeg" />
+            Your browser does not support the audio element.
+          </audio>
         </div>
       {/each}
     </div>
   {:else}
     <p>No user is signed in.</p>
-    <button on:click={handleAnonymousSignIn}>Sign in Anonymously</button>
   {/if}
   {#if error}
     <p style="color: red">Error: {error.message}</p>

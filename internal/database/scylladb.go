@@ -14,6 +14,7 @@ type ScyllaService interface {
 	UpsertUser(userID, username, email, role string) error
 	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
 	GetSongsByUserID(userID string) ([]models.Song, error)
+	GetObjectNameBySongID(songID string) (string, error)
 }
 
 type scyllaService struct {
@@ -85,4 +86,13 @@ func (s *scyllaService) GetSongsByUserID(userID string) ([]models.Song, error) {
 	}
 
 	return songs, nil
+}
+
+func (s *scyllaService) GetObjectNameBySongID(songID string) (string, error) {
+	var objectName string
+	query := `SELECT song_url FROM songs WHERE song_id = ? LIMIT 1`
+	if err := s.session.Query(query, songID).Scan(&objectName); err != nil {
+		return "", err
+	}
+	return objectName, nil
 }

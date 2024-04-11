@@ -27,12 +27,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	//	e.GET("/:bucketName/:objectName", s.getMusic)
 
 	e.GET("/health", s.healthHandler)
-	e.GET("/auth/:provider/callback", s.getAuthCallback)
 	e.GET("/logout", s.getLogout)
 	e.GET("/auth/:provider", s.getHandleAuth)
 	e.POST("/auth/google", handlers.UpsertUserHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/music/upload", handlers.UploadMusicHandler(s.db, s.musicService), mdw.JWTMiddleware)
 	e.GET("/music", handlers.GetSongsByUser(s.db), mdw.JWTMiddleware)
+	e.GET("/music/stream/:song_id", handlers.StreamMusic(s.db, s.musicService))
+
 	return e
 }
 

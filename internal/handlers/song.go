@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"rr-backend/internal/database"
+	"rr-backend/internal/helper"
 
 	"github.com/gocql/gocql"
 	"github.com/labstack/echo/v4"
@@ -89,5 +90,28 @@ func GetSongsByUser(dbService database.ScyllaService) echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, songs)
+	}
+}
+
+func StreamMusic(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		songID := c.Param("song_id") // Assuming song_id is a path parameter
+
+		// Retrieve the object name (URL) for the song from the database
+		objectName, err := dbService.GetObjectNameBySongID(songID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get song")
+		}
+
+		// Get the object from MinIO
+		object, err := minioService.GetObject("music", objectName)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get song from storage")
+		}
+		defer object.Close()
+
+		// Use the helper function to serve the content
+		helper.ServeContent(c.Response().Writer, c.Request(), objectName, time.Now(), object)
+		return nil
 	}
 }
