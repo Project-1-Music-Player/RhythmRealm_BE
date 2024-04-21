@@ -5,6 +5,7 @@
   import type { User } from "firebase/auth";
   import { auth, googleProvider, signInAnonymously, signInWithPopup, signOut } from './firebase'; // Ensure this path is correct
   import { onMount } from 'svelte';
+    import Search from './lib/Search.svelte';
   let title: string | Blob, album: string | Blob, releaseDate: string | Blob, genre: string | Blob, songFile: string | Blob, thumbnailFile: string | Blob;
   let user: User | null = null;
   let error: Error | null = null;
@@ -194,7 +195,7 @@
   {#if error}
     <p style="color: red">Error: {error.message}</p>
   {/if}
-  
+    <Search />
 </main>
 
 <style>

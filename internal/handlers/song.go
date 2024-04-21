@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"rr-backend/internal/database"
@@ -62,13 +63,11 @@ func UploadMusicHandler(dbService database.ScyllaService, minioService database.
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to upload thumbnail")
 		}
 
-		// Parse release date
 		parsedReleaseDate, err := time.Parse("2006-01-02", releaseDate)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid release date format")
 		}
 
-		// Write metadata to database
 		err = dbService.InsertSong(songID, title, userID, album, parsedReleaseDate, genre, songObjectName, thumbnailObjectName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save song metadata")
@@ -95,15 +94,12 @@ func GetSongsByUser(dbService database.ScyllaService) echo.HandlerFunc {
 
 func StreamMusic(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		songID := c.Param("song_id") // Assuming song_id is a path parameter
-
-		// Retrieve the object name (URL) for the song from the database
+		songID := c.Param("song_id")
 		objectName, err := dbService.GetObjectNameBySongID(songID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get song")
 		}
 
-		// Get the object from MinIO
 		object, err := minioService.GetObject("music", objectName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get song from storage")
@@ -113,5 +109,29 @@ func StreamMusic(dbService database.ScyllaService, minioService database.MinIOSe
 		// Use the helper function to serve the content
 		helper.ServeContent(c.Response().Writer, c.Request(), objectName, time.Now(), object)
 		return nil
+	}
+}
+func SearchSongs(dbService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		searchQuery := c.QueryParam("q")
+		pageStr := c.QueryParam("page")
+		limitStr := c.QueryParam("limit")
+
+		page, _ := strconv.Atoi(pageStr)
+		if page < 1 {
+			page = 1
+		}
+		limit, _ := strconv.Atoi(limitStr)
+		if limit <= 0 {
+			limit = 10 // 10 items/page
+		}
+		offset := (page - 1) * limit
+
+		songs, err := dbService.SearchSongs(searchQuery, limit, offset)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to search songs")
+		}
+
+		return c.JSON(http.StatusOK, songs)
 	}
 }

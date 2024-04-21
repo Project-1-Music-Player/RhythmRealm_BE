@@ -15,6 +15,7 @@ type ScyllaService interface {
 	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
 	GetSongsByUserID(userID string) ([]models.Song, error)
 	GetObjectNameBySongID(songID string) (string, error)
+	SearchSongs(query string, limit, offset int) ([]models.Song, error)
 }
 
 type scyllaService struct {
@@ -95,4 +96,22 @@ func (s *scyllaService) GetObjectNameBySongID(songID string) (string, error) {
 		return "", err
 	}
 	return objectName, nil
+}
+
+func (s *scyllaService) SearchSongs(query string, limit, offset int) ([]models.Song, error) {
+	var songs []models.Song
+	cqlQuery := "SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url FROM songs WHERE title LIKE ? ALLOW FILTERING"
+
+	iter := s.session.Query(cqlQuery, "%"+query+"%").PageSize(limit).PageState(nil).Iter() // create an iterator that go through the select results
+
+	var song models.Song
+	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL) {
+		songs = append(songs, song)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	return songs, nil
 }
