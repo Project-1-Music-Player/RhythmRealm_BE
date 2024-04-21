@@ -14,6 +14,7 @@ services:
       - ./scylladb/populate_db.cql:/scylla_scripts/2.cql
       - ./scylladb/initdb.sh:/scylla_scripts/initdb.sh
     entrypoint: [ "bash", "/scylla_scripts/initdb.sh" ]
+ 
   minio:
     image: minio/minio
     container_name: minio
@@ -32,6 +33,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+  
   mc:
     image: minio/mc
     container_name: mc

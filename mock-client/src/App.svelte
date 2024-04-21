@@ -65,7 +65,7 @@
     formData.append('releaseDate', releaseDate);
     formData.append('genre', genre);
     formData.append('song', songFile);
-    formData.append('thumbnail', thumbnailFile);
+    formData.append('thumbnail', thumbnailFile);  
 
     const idToken = await getIdToken(); // Function to get ID token from Firebase
 
