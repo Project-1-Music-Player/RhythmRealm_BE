@@ -13,7 +13,7 @@
   
     async function searchSongs() {
       loading = true;
-      const response = await fetch(`/music/search?q=${encodeURIComponent(query)}&page=${page}&limit=10`);
+      const response = await fetch(`http://localhost:3000/music/search?q=${encodeURIComponent(query)}&page=${page}&limit=10`);
       if (response.ok) {
         const newSongs = await response.json();
         songs = [...songs, ...newSongs];

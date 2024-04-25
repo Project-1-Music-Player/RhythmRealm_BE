@@ -29,7 +29,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.POST("/music/upload", handlers.UploadMusicHandler(s.db, s.musicService), mdw.JWTMiddleware)
 	e.GET("/music", handlers.GetSongsByUser(s.db), mdw.JWTMiddleware)
 	e.GET("/music/stream/:song_id", handlers.StreamMusic(s.db, s.musicService))
-	e.GET("/music/search/", handlers.SearchSongs(s.db))
+	e.GET("/music/search", handlers.SearchSongs(s.db))
 	return e
 }
 
