@@ -5,12 +5,15 @@
   import type { User } from "firebase/auth";
   import { auth, googleProvider, signInAnonymously, signInWithPopup, signOut } from './firebase'; // Ensure this path is correct
   import { onMount } from 'svelte';
-    import Search from './lib/Search.svelte';
+  
+  // Use the code from these follow imports to implement the front end.
+  import Search from './lib/Search.svelte';
+  import PlaylistManager from './lib/PlaylistManager.svelte';
   let title: string | Blob, album: string | Blob, releaseDate: string | Blob, genre: string | Blob, songFile: string | Blob, thumbnailFile: string | Blob;
   let user: User | null = null;
   let error: Error | null = null;
   auth.onAuthStateChanged(console.log)
-  let songs: any[] = []; // Existing auth state change listener
+  let songs: any[] = [];
   auth.onAuthStateChanged((u) => {
     user = u;
     if (user) {
@@ -196,6 +199,7 @@
     <p style="color: red">Error: {error.message}</p>
   {/if}
     <Search />
+    <PlaylistManager />
 </main>
 
 <style>

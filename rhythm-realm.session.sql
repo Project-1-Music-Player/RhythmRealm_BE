@@ -1,0 +1,1 @@
+SELECT * FROM rhythm_keyspace.playlists WHERE user_id = 'AXqtsFGFrlbEzdWQorxkBklewvH2';

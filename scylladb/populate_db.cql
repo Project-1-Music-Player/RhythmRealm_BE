@@ -17,8 +17,8 @@ INSERT INTO songs (song_id, title, user_id, album, release_date, genre, song_url
 INSERT INTO playlists (playlist_id, user_id, name, description) VALUES (33333333-3333-3333-3333-333333333333, '00000000-0000-0000-0000-000000000001', 'My Playlist', 'A great selection of songs.');
 
 -- Insert songs into the playlist using the playlist_id and song_id
-INSERT INTO playlist_songs (playlist_id, song_order, song_id) VALUES (33333333-3333-3333-3333-333333333333, 1, 11111111-1111-1111-1111-111111111111);
-INSERT INTO playlist_songs (playlist_id, song_order, song_id) VALUES (33333333-3333-3333-3333-333333333333, 2, 22222222-2222-2222-2222-222222222222);
+INSERT INTO playlist_songs (playlist_id, added_at, song_id) VALUES (33333333-3333-3333-3333-333333333333, toUnixTimestamp(now()), 11111111-1111-1111-1111-111111111111);
+INSERT INTO playlist_songs (playlist_id, added_at, song_id) VALUES (33333333-3333-3333-3333-333333333333, toUnixTimestamp(now()), 22222222-2222-2222-2222-222222222222);
 
 -- Update play counts for songs
 UPDATE song_play_counts SET play_count = play_count + 1 WHERE song_id = 11111111-1111-1111-1111-111111111111;
