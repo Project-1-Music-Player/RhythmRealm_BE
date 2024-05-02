@@ -16,6 +16,10 @@ type ScyllaService interface {
 	GetSongsByUserID(userID string) ([]models.Song, error)
 	GetObjectNameBySongID(songID string) (string, error)
 	SearchSongs(query string, limit, offset int) ([]models.Song, error)
+	AddPlaylist(playlistID gocql.UUID, userID, name, description string) error
+	AddSongToPlaylist(playlistID gocql.UUID, userID string, songID gocql.UUID, addedAt time.Time) error
+	RemoveSongFromPlaylist(playlistID gocql.UUID, songID gocql.UUID) error
+	FetchPlaylists(userID string) ([]models.Playlist, error)
 }
 
 type scyllaService struct {
@@ -114,4 +118,56 @@ func (s *scyllaService) SearchSongs(query string, limit, offset int) ([]models.S
 	}
 
 	return songs, nil
+}
+
+func (s *scyllaService) AddPlaylist(playlistID gocql.UUID, userID, name, description string) error {
+	query := `INSERT INTO playlists (playlist_id, user_id, name, description) VALUES (?, ?, ?, ?)`
+	if err := s.session.Query(query, playlistID, userID, name, description).Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) AddSongToPlaylist(playlistID gocql.UUID, userID string, songID gocql.UUID, addedAt time.Time) error {
+	query := `INSERT INTO playlist_songs (playlist_id, added_at, song_id) VALUES (?, ?, ?)`
+	if err := s.session.Query(query, playlistID, addedAt, songID).Exec(); err != nil {
+		log.Printf("Failed to add song to playlist: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) RemoveSongFromPlaylist(playlistID gocql.UUID, songID gocql.UUID) error {
+	query := `DELETE FROM playlist_songs WHERE playlist_id = ? AND song_id = ?`
+	if err := s.session.Query(query, playlistID, songID).Exec(); err != nil {
+		log.Printf("Failed to remove song from playlist: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) FetchPlaylists(userID string) ([]models.Playlist, error) {
+	query := `SELECT playlist_id, name, description FROM playlists WHERE user_id = ?`
+	iter := s.session.Query(query, userID).Iter()
+
+	var playlists []models.Playlist
+	var playlistID gocql.UUID
+	var name string
+	var description string
+
+	for iter.Scan(&playlistID, &name, &description) {
+		playlists = append(playlists, models.Playlist{
+			PlaylistID:  playlistID,
+			UserID:      userID,
+			Name:        name,
+			Description: description,
+		})
+	}
+
+	if err := iter.Close(); err != nil {
+		log.Printf("Failed to fetch playlists: %v", err)
+		return nil, err
+	}
+
+	return playlists, nil
 }

@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS playlists (
 
 CREATE TABLE IF NOT EXISTS playlist_songs (
     playlist_id UUID,
-    song_order INT,
+    added_at TIMESTAMP,
     song_id UUID,
-    PRIMARY KEY (playlist_id, song_order)
-);
+    PRIMARY KEY (playlist_id, added_at)
+) WITH CLUSTERING ORDER BY (added_at ASC);
 
 CREATE INDEX IF NOT EXISTS playlists_user_id_idx ON playlists(user_id);
 
