@@ -12,14 +12,19 @@ import (
 type ScyllaService interface {
 	Health() map[string]string
 	UpsertUser(userID, username, email, role string) error
+
 	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
 	GetSongsByUserID(userID string) ([]models.Song, error)
 	GetObjectNameBySongID(songID string) (string, error)
 	SearchSongs(query string, limit, offset int) ([]models.Song, error)
+
 	AddPlaylist(playlistID gocql.UUID, userID, name, description string) error
 	AddSongToPlaylist(playlistID gocql.UUID, userID string, songID gocql.UUID, addedAt time.Time) error
 	RemoveSongFromPlaylist(playlistID gocql.UUID, songID gocql.UUID) error
 	FetchPlaylists(userID string) ([]models.Playlist, error)
+	RemovePlaylist(playlistID gocql.UUID) error
+
+	IncrementPlayCount(songID string) error
 }
 
 type scyllaService struct {
@@ -170,4 +175,24 @@ func (s *scyllaService) FetchPlaylists(userID string) ([]models.Playlist, error)
 	}
 
 	return playlists, nil
+}
+
+func (s scyllaService) RemovePlaylist(playlistID gocql.UUID) error {
+	batch := s.session.NewBatch(gocql.LoggedBatch)
+	batch.Query(`DELETE FROM playlists WHERE playlist_id = ?`, playlistID)
+	batch.Query(`DELETE FROM playlist_songs WHERE playlist_id = ?`, playlistID)
+	if err := s.session.ExecuteBatch(batch); err != nil {
+		log.Printf("Failed to remove playlists: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (s scyllaService) IncrementPlayCount(songID string) error {
+	query := `UPDATE songs SET play_count = play_count + 1 WHERE song_id = ?`
+	if err := s.session.Query(query, songID).Exec(); err != nil {
+		log.Printf("Failed to increment play count: %v", err)
+		return err
+	}
+	return nil
 }

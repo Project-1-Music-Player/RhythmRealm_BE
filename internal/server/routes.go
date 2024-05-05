@@ -27,6 +27,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// e.GET("/auth/:provider", s.getHandleAuth)
 	e.POST("/auth/google", handlers.UpsertUserHandler(s.db), mdw.JWTMiddleware)
 
+	// TODO: Add endpoint for user profile
+
 	e.POST("/music/upload", handlers.UploadMusicHandler(s.db, s.musicService), mdw.JWTMiddleware)
 	e.GET("/music", handlers.GetSongsByUser(s.db), mdw.JWTMiddleware)
 	e.GET("/music/stream/:song_id", handlers.StreamMusic(s.db, s.musicService))
@@ -34,8 +36,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/playlists", handlers.FetchPlaylistsHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/playlists", handlers.AddPlaylistHandler(s.db), mdw.JWTMiddleware)
+	e.DELETE("/playlists/:playlist_id", handlers.RemovePlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/playlists/:playlist_id/songs", handlers.AddSongToPlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.DELETE("/playlists/:playlist_id/songs/:song_id", handlers.RemoveSongFromPlaylistHandler(s.db), mdw.JWTMiddleware)
+
 	return e
 }
 
