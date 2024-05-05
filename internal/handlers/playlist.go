@@ -93,3 +93,22 @@ func RemoveSongFromPlaylistHandler(scyllaService database.ScyllaService) echo.Ha
 		})
 	}
 }
+
+func RemovePlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		playlistID := c.Param("playlist_id")
+		playlistUUID, err := gocql.ParseUUID(playlistID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid playlist ID")
+		}
+
+		err = scyllaService.RemovePlaylist(playlistUUID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove playlist")
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "Playlist removed successfully",
+		})
+	}
+}
