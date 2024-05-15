@@ -120,7 +120,17 @@ func GetSongsByUser(dbService database.ScyllaService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, songs)
 	}
 }
-
+func GetSongThumbnail(minioService database.MinIOService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		thumbnailURL := c.FormValue("thumbnail_url")
+		object, err := minioService.GetObject("music", thumbnailURL)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get thumbnail from storage")
+		}
+		defer object.Close()
+		return c.Stream(http.StatusOK, "image/jpeg", object)
+	}
+}
 func StreamMusic(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		songID := c.Param("song_id")
