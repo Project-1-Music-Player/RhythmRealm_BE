@@ -14,6 +14,7 @@ type ScyllaService interface {
 	UpsertUser(userID, username, email, role string) error
 
 	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
+	RemoveSong(songID gocql.UUID) error
 	GetSongsByUserID(userID string) ([]models.Song, error)
 	GetObjectNameBySongID(songID string) (string, error)
 	SearchSongs(query string, limit, offset int) ([]models.Song, error)
@@ -76,6 +77,15 @@ func (s *scyllaService) InsertSong(songID gocql.UUID, title, userID, album strin
 	query := `INSERT INTO songs (song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	if err := s.session.Query(query, songID, title, userID, album, releaseDate, genre, songURL, thumbnailURL).Exec(); err != nil {
 		log.Printf("Failed to insert song: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) RemoveSong(songID gocql.UUID) error {
+	query := `DELETE FROM songs WHERE song_id = ?`
+	if err := s.session.Query(query, songID).Exec(); err != nil {
+		log.Printf("Failed to remove song: %v", err)
 		return err
 	}
 	return nil

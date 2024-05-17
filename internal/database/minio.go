@@ -14,7 +14,8 @@ type MinIOService interface {
 	Health() map[string]string
 	ServeMusic(ctx echo.Context, bucketName, objectName string) (*minio.Object, error)
 	UploadObject(bucketName, objectName string, reader io.Reader, objectSize int64, contentType string) (*minio.UploadInfo, error)
-	GetObject(bucketName, objectName string) (*minio.Object, error) // Add missing function signature
+	GetObject(bucketName, objectName string) (*minio.Object, error)
+	RemoveObject(bucketName, objectName string) error
 }
 
 type minIOService struct {
@@ -78,4 +79,12 @@ func (s *minIOService) GetObject(bucketName, objectName string) (*minio.Object, 
 		return nil, err
 	}
 	return object, nil
+}
+
+func (s *minIOService) RemoveObject(bucketName, objectName string) error {
+	err := s.client.RemoveObject(context.Background(), bucketName, objectName, minio.RemoveObjectOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }

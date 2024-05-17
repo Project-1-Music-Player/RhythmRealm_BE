@@ -79,6 +79,35 @@ func UploadMusicHandler(dbService database.ScyllaService, minioService database.
 	}
 }
 
+func RemoveSongHandler(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		songID := c.Param("song_id")
+		objectName, err := dbService.GetObjectNameBySongID(songID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get song")
+		}
+
+		songUUID, err := gocql.ParseUUID(songID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid song ID")
+		}
+
+		err = dbService.RemoveSong(songUUID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove song")
+		}
+
+		err = minioService.RemoveObject("music", objectName)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove song from storage")
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "Song removed successfully",
+		})
+	}
+}
+
 func GetSongsByUser(dbService database.ScyllaService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userID := c.Get("userID").(string) // Get the userID from JWT middleware
@@ -91,7 +120,17 @@ func GetSongsByUser(dbService database.ScyllaService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, songs)
 	}
 }
-
+func GetSongThumbnail(minioService database.MinIOService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		thumbnailURL := c.FormValue("thumbnail_url")
+		object, err := minioService.GetObject("music", thumbnailURL)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get thumbnail from storage")
+		}
+		defer object.Close()
+		return c.Stream(http.StatusOK, "image/jpeg", object)
+	}
+}
 func StreamMusic(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		songID := c.Param("song_id")
