@@ -3,7 +3,7 @@
   import viteLogo from '/vite.svg'
   import Counter from './lib/Counter.svelte'
   import type { User } from "firebase/auth";
-  import { auth, googleProvider, signInAnonymously, signInWithPopup, signOut } from './firebase'; // Ensure this path is correct
+  import { auth, googleProvider, signInAnonymously, signInWithPopup, signOut } from './firebase.js'; // Ensure this path is correct
   import { onMount } from 'svelte';
   
   // Use the code from these follow imports to implement the front end.
