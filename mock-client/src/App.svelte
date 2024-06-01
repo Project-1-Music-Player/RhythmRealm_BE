@@ -58,6 +58,9 @@
       console.error('Error fetching songs:', error);
     }
   }
+  function thumbnailUrl(songID: string) {
+    return `http://localhost:3000/music/thumbnail/${songID}`;
+  }
   function streamUrl(songID: string) {
     return `http://localhost:3000/music/stream/${songID}`;
   }
@@ -182,6 +185,7 @@
       {#each songs as song}
         <div class="song">
           <h3>{song.title}</h3>
+          <img src={thumbnailUrl(song.song_id)} alt={song.title} />
           <p>Album: {song.album}</p>
           <p>Release Date: {song.releaseDate}</p>
           <p>Genre: {song.genre}</p>

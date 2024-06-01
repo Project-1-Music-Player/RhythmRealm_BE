@@ -18,13 +18,10 @@ CREATE TABLE IF NOT EXISTS songs (
     release_date TIMESTAMP,
     genre TEXT,
     song_url TEXT,
-    thumbnail_url TEXT
+    thumbnail_url TEXT,
+    play_count INT
 );
 
-CREATE TABLE IF NOT EXISTS song_play_counts (
-    song_id UUID PRIMARY KEY,
-    play_count COUNTER
-);
 
 CREATE INDEX IF NOT EXISTS songs_genre_idx ON songs(genre);
 

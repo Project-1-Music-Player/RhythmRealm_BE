@@ -120,15 +120,20 @@ func GetSongsByUser(dbService database.ScyllaService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, songs)
 	}
 }
-func GetSongThumbnail(minioService database.MinIOService) echo.HandlerFunc {
+func GetSongThumbnail(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		thumbnailURL := c.FormValue("thumbnail_url")
-		object, err := minioService.GetObject("music", thumbnailURL)
+		songID := c.Param("song_id")
+		thumbnailName, err := dbService.GetSongThumbnailBySongID(songID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get thumbnail")
+		}
+		object, err := minioService.GetObject("music", thumbnailName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get thumbnail from storage")
 		}
 		defer object.Close()
-		return c.Stream(http.StatusOK, "image/jpeg", object)
+		c.Stream(http.StatusOK, "image/jpeg", object)
+		return nil
 	}
 }
 func StreamMusic(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
@@ -145,8 +150,14 @@ func StreamMusic(dbService database.ScyllaService, minioService database.MinIOSe
 		}
 		defer object.Close()
 
-		// Use the helper function to serve the content
 		helper.ServeContent(c.Response().Writer, c.Request(), objectName, time.Now(), object)
+		go func() {
+			if err := dbService.IncrementPlayCount(songID); err != nil {
+				fmt.Printf("Error incrementing play count: %v\n", err)
+				// TODO: Implement proper logging or error tracking mechanism
+			}
+		}()
+
 		return nil
 	}
 }

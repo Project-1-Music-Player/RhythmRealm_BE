@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"rr-backend/internal/models"
@@ -17,6 +18,7 @@ type ScyllaService interface {
 	RemoveSong(songID gocql.UUID) error
 	GetSongsByUserID(userID string) ([]models.Song, error)
 	GetObjectNameBySongID(songID string) (string, error)
+	GetSongThumbnailBySongID(songID string) (string, error)
 	SearchSongs(query string, limit, offset int) ([]models.Song, error)
 
 	AddPlaylist(playlistID gocql.UUID, userID, name, description string) error
@@ -74,7 +76,7 @@ func (s *scyllaService) UpsertUser(userID, username, email, role string) error {
 }
 
 func (s *scyllaService) InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error {
-	query := `INSERT INTO songs (song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO songs (song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`
 	if err := s.session.Query(query, songID, title, userID, album, releaseDate, genre, songURL, thumbnailURL).Exec(); err != nil {
 		log.Printf("Failed to insert song: %v", err)
 		return err
@@ -92,12 +94,12 @@ func (s *scyllaService) RemoveSong(songID gocql.UUID) error {
 }
 
 func (s *scyllaService) GetSongsByUserID(userID string) ([]models.Song, error) {
-	query := `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url FROM songs WHERE user_id = ?`
+	query := `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs WHERE user_id = ?`
 	iter := s.session.Query(query, userID).Iter()
 
 	var songs []models.Song
 	var song models.Song
-	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL) {
+	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL, &song.PlayCount) {
 		songs = append(songs, song)
 	}
 
@@ -115,6 +117,15 @@ func (s *scyllaService) GetObjectNameBySongID(songID string) (string, error) {
 		return "", err
 	}
 	return objectName, nil
+}
+
+func (s *scyllaService) GetSongThumbnailBySongID(songID string) (string, error) {
+	var thumbnailURL string
+	query := `SELECT thumbnail_url FROM songs WHERE song_id = ? LIMIT 1`
+	if err := s.session.Query(query, songID).Scan(&thumbnailURL); err != nil {
+		return "", err
+	}
+	return thumbnailURL, nil
 }
 
 func (s *scyllaService) SearchSongs(query string, limit, offset int) ([]models.Song, error) {
@@ -198,11 +209,13 @@ func (s scyllaService) RemovePlaylist(playlistID gocql.UUID) error {
 	return nil
 }
 
-func (s scyllaService) IncrementPlayCount(songID string) error {
-	query := `UPDATE songs SET play_count = play_count + 1 WHERE song_id = ?`
-	if err := s.session.Query(query, songID).Exec(); err != nil {
-		log.Printf("Failed to increment play count: %v", err)
-		return err
+func (s *scyllaService) IncrementPlayCount(songID string) error {
+	songUUID, err := gocql.ParseUUID(songID)
+	if err != nil {
+		return fmt.Errorf("invalid song ID: %w", err)
 	}
-	return nil
+
+	query := `UPDATE songs SET play_count = play_count + 1 WHERE song_id = ?`
+	return s.session.Query(query, songUUID).Exec()
+	// return error is better
 }
