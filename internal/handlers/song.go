@@ -120,6 +120,18 @@ func GetSongsByUser(dbService database.ScyllaService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, songs)
 	}
 }
+
+func GetAllSongs(dbService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		songs, err := dbService.GetAllSongs()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get songs")
+		}
+
+		return c.JSON(http.StatusOK, songs)
+	}
+
+}
 func GetSongThumbnail(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		songID := c.Param("song_id")

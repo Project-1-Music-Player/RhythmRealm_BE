@@ -28,6 +28,7 @@
     if (user) {
       try {
         const token = await user.getIdToken();
+        console.log('ID token:', token);
         return token;
       } catch (error) {
         console.error('Failed to get ID token:', error);

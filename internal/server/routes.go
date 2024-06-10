@@ -34,6 +34,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/music/stream/:song_id", handlers.StreamMusic(s.db, s.musicService))
 	e.GET("/music/search", handlers.SearchSongs(s.db))
 	e.GET("/music/thumbnail/:song_id", handlers.GetSongThumbnail(s.db, s.musicService))
+	e.GET("/music/all", handlers.GetAllSongs(s.db), mdw.JWTMiddleware)
 
 	e.GET("/playlists", handlers.FetchPlaylistsHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/playlists", handlers.AddPlaylistHandler(s.db), mdw.JWTMiddleware)

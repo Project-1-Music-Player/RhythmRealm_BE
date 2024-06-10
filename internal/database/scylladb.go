@@ -17,6 +17,7 @@ type ScyllaService interface {
 	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
 	RemoveSong(songID gocql.UUID) error
 	GetSongsByUserID(userID string) ([]models.Song, error)
+	GetAllSongs() ([]models.Song, error)
 	GetObjectNameBySongID(songID string) (string, error)
 	GetSongThumbnailBySongID(songID string) (string, error)
 	SearchSongs(query string, limit, offset int) ([]models.Song, error)
@@ -96,6 +97,23 @@ func (s *scyllaService) RemoveSong(songID gocql.UUID) error {
 func (s *scyllaService) GetSongsByUserID(userID string) ([]models.Song, error) {
 	query := `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs WHERE user_id = ?`
 	iter := s.session.Query(query, userID).Iter()
+
+	var songs []models.Song
+	var song models.Song
+	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL, &song.PlayCount) {
+		songs = append(songs, song)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	return songs, nil
+}
+
+func (s *scyllaService) GetAllSongs() ([]models.Song, error) {
+	query := `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs ORDER BY release_date DESC`
+	iter := s.session.Query(query).Iter()
 
 	var songs []models.Song
 	var song models.Song
