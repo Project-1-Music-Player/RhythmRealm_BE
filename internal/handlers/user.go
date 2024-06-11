@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"net/http"                     // Update with your actual project path
-	"rr-backend/internal/database" // Update with your actual project path
-	"rr-backend/internal/models"   // Update with your actual project path
+	"net/http"
+	"rr-backend/internal/database"
+	"rr-backend/internal/models"
 
 	"github.com/labstack/echo/v4"
 )
