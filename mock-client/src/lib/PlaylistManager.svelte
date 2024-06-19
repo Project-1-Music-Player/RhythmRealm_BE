@@ -68,7 +68,7 @@
           throw new Error('Failed to create playlist');
         }
       } catch (err) {
-        error = err;
+        console.error('Failed to add playlist: ', err);
       }
     }
   
@@ -91,7 +91,7 @@
           throw new Error('Failed to add song to playlist');
         }
       } catch (err) {
-        error = err;
+        console.error('Failed to add song playlist: ', err);
       }
     }
   
@@ -107,7 +107,7 @@
   
         fetchPlaylists();
       } catch (err) {
-        error = err;
+        console.error('Failed to remove song playlist: ', err);
       }
     }
   
@@ -157,7 +157,7 @@
       <p>Please sign in to manage your playlists.</p>
     {/if}
     {#if error}
-      <p class="error">{error.message}</p>
+      <p class="error">{error}</p>
     {/if}
   </main>
   

@@ -24,11 +24,20 @@
     }
   });
 
+  getallsongs()
+  async function getallsongs() {
+      const response = await fetch('http://localhost:3000/music/all')
+      if(response.ok) {
+        const result = await response.json()
+        console.log(result)
+      }
+
+  }
+
   async function getIdToken(): Promise<string> {
     if (user) {
       try {
         const token = await user.getIdToken();
-        console.log('ID token:', token);
         return token;
       } catch (error) {
         console.error('Failed to get ID token:', error);

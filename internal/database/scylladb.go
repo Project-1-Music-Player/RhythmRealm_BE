@@ -112,7 +112,7 @@ func (s *scyllaService) GetSongsByUserID(userID string) ([]models.Song, error) {
 }
 
 func (s *scyllaService) GetAllSongs() ([]models.Song, error) {
-	query := `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs ORDER BY release_date DESC`
+	query := `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs`
 	iter := s.session.Query(query).Iter()
 
 	var songs []models.Song
