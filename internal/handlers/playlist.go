@@ -43,18 +43,15 @@ func AddPlaylistHandler(dbService database.ScyllaService) echo.HandlerFunc {
 func AddSongToPlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		playlistID := c.Param("playlist_id")
+		songID := c.Param("song_id")
 		userID := c.Get("userID").(string)
 
-		var song models.Song
-		if err := c.Bind(&song); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid song data")
-		}
 		playlistUUID, err := gocql.ParseUUID(playlistID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid playlist ID")
 		}
 
-		songUUID, err := gocql.ParseUUID(song.SongID)
+		songUUID, err := gocql.ParseUUID(songID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid song ID")
 		}

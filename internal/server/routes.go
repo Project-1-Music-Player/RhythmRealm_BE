@@ -39,7 +39,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/playlists", handlers.FetchPlaylistsHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/playlists", handlers.AddPlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.DELETE("/playlists/:playlist_id", handlers.RemovePlaylistHandler(s.db), mdw.JWTMiddleware)
-	e.POST("/playlists/:playlist_id/songs", handlers.AddSongToPlaylistHandler(s.db), mdw.JWTMiddleware)
+	e.POST("/playlists/:playlist_id/songs/:song_id", handlers.AddSongToPlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.DELETE("/playlists/:playlist_id/songs/:song_id", handlers.RemoveSongFromPlaylistHandler(s.db), mdw.JWTMiddleware)
 
 	return e
