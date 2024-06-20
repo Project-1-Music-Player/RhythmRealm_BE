@@ -37,6 +37,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.GET("/music/all", handlers.GetAllSongs(s.db))
 	e.POST("/music/:song_id/like", handlers.LikeSongHandler(s.db), mdw.JWTMiddleware)
 	e.DELETE("/music/:song_id/like", handlers.UnlikeSongHandler(s.db), mdw.JWTMiddleware)
+	e.GET("/music/likes", handlers.GetLikedSongsHandler(s.db), mdw.JWTMiddleware)
 
 	e.GET("/playlists", handlers.FetchPlaylistsHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/playlists", handlers.AddPlaylistHandler(s.db), mdw.JWTMiddleware)
@@ -44,7 +45,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.POST("/playlists/:playlist_id/songs/:song_id", handlers.AddSongToPlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.DELETE("/playlists/:playlist_id/songs/:song_id", handlers.RemoveSongFromPlaylistHandler(s.db), mdw.JWTMiddleware)
 
-	e.GET("/users/me/likes", handlers.GetLikedSongsHandler(s.db), mdw.JWTMiddleware)
 	return e
 }
 

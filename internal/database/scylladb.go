@@ -248,7 +248,6 @@ func (s *scyllaService) UnlikeSong(userID string, songID gocql.UUID) error {
 
 func (s *scyllaService) GetLikedSongsByUser(userID string) ([]models.Song, error) {
 	var songIDs []gocql.UUID
-	var song models.Song
 	var songID gocql.UUID
 	query := `SELECT song_id FROM song_likes WHERE user_id = ?`
 	iter := s.session.Query(query, userID).Iter()
@@ -264,10 +263,10 @@ func (s *scyllaService) GetLikedSongsByUser(userID string) ([]models.Song, error
 	}
 
 	var likedSongs []models.Song
+	var song models.Song
 	query = `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs WHERE song_id IN ?`
 	iter = s.session.Query(query, songIDs).Iter()
 	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL, &song.PlayCount) {
-		var song models.Song
 		likedSongs = append(likedSongs, song)
 	}
 	if err := iter.Close(); err != nil {
