@@ -29,6 +29,9 @@ type ScyllaService interface {
 	RemovePlaylist(playlistID gocql.UUID) error
 
 	IncrementPlayCount(songID string) error
+
+	LikeSong(userID string, songID gocql.UUID) error
+	UnlikeSong(userID string, songID gocql.UUID) error
 }
 
 type scyllaService struct {
@@ -236,4 +239,22 @@ func (s *scyllaService) IncrementPlayCount(songID string) error {
 	query := `UPDATE songs SET play_count = play_count + 1 WHERE song_id = ?`
 	return s.session.Query(query, songUUID).Exec()
 	// return error is better
+}
+
+func (s *scyllaService) LikeSong(userID string, songID gocql.UUID) error {
+	query := `INSERT INTO song_likes (user_id, song_id, liked_at) VALUES (?, ?, ?)`
+	if err := s.session.Query(query, userID, songID, time.Now()).Exec(); err != nil {
+		log.Printf("Failed to like song: %v", err)
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) UnlikeSong(userID string, songID gocql.UUID) error {
+	query := `DELETE FROM song_likes WHERE user_id = ? AND song_id = ?`
+	if err := s.session.Query(query, userID, songID).Exec(); err != nil {
+		log.Printf("Failed to unlike song: %v", err)
+		return err
+	}
+	return nil
 }

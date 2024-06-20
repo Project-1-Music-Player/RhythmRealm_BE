@@ -47,6 +47,20 @@ CREATE TABLE IF NOT EXISTS playlist_songs (
     PRIMARY KEY (playlist_id, added_at)
 ) WITH CLUSTERING ORDER BY (added_at ASC);
 
+CREATE TABLE song_play_counts (
+  song_id UUID,
+  play_count COUNTER,
+  PRIMARY KEY (artist_id, song_id)
+);
+
+CREATE TABLE song_likes (
+  user_id TEXT,
+  song_id UUID,
+  liked_at TIMESTAMP,
+  PRIMARY KEY (user_id, song_id)
+);
+
+CREATE INDEX song_likes_by_song ON song_likes (song_id);
 CREATE INDEX IF NOT EXISTS playlists_user_id_idx ON playlists(user_id);
 
 CREATE INDEX IF NOT EXISTS songs_user_id_idx ON songs(user_id);

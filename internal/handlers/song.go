@@ -197,3 +197,45 @@ func SearchSongs(dbService database.ScyllaService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, songs)
 	}
 }
+
+func LikeSongHandler(dbService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		songID := c.Param("song_id")
+		userID := c.Get("userID").(string)
+
+		songUUID, err := gocql.ParseUUID(songID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid song ID")
+		}
+
+		err = dbService.LikeSong(userID, songUUID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to like song")
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "Song liked successfully",
+		})
+	}
+}
+
+func UnlikeSongHandler(dbService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		songID := c.Param("song_id")
+		userID := c.Get("userID").(string)
+
+		songUUID, err := gocql.ParseUUID(songID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid song ID")
+		}
+
+		err = dbService.UnlikeSong(userID, songUUID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unlike song")
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "Song unliked successfully",
+		})
+	}
+}
