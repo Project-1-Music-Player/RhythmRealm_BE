@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"rr-backend/internal/models"
@@ -28,10 +27,9 @@ type ScyllaService interface {
 	FetchPlaylists(userID string) ([]models.Playlist, error)
 	RemovePlaylist(playlistID gocql.UUID) error
 
-	IncrementPlayCount(songID string) error
-
 	LikeSong(userID string, songID gocql.UUID) error
 	UnlikeSong(userID string, songID gocql.UUID) error
+	GetLikedSongsByUser(userID string) ([]models.Song, error)
 }
 
 type scyllaService struct {
@@ -230,17 +228,6 @@ func (s scyllaService) RemovePlaylist(playlistID gocql.UUID) error {
 	return nil
 }
 
-func (s *scyllaService) IncrementPlayCount(songID string) error {
-	songUUID, err := gocql.ParseUUID(songID)
-	if err != nil {
-		return fmt.Errorf("invalid song ID: %w", err)
-	}
-
-	query := `UPDATE songs SET play_count = play_count + 1 WHERE song_id = ?`
-	return s.session.Query(query, songUUID).Exec()
-	// return error is better
-}
-
 func (s *scyllaService) LikeSong(userID string, songID gocql.UUID) error {
 	query := `INSERT INTO song_likes (user_id, song_id, liked_at) VALUES (?, ?, ?)`
 	if err := s.session.Query(query, userID, songID, time.Now()).Exec(); err != nil {
@@ -257,4 +244,35 @@ func (s *scyllaService) UnlikeSong(userID string, songID gocql.UUID) error {
 		return err
 	}
 	return nil
+}
+
+func (s *scyllaService) GetLikedSongsByUser(userID string) ([]models.Song, error) {
+	var songIDs []gocql.UUID
+	var song models.Song
+	var songID gocql.UUID
+	query := `SELECT song_id FROM song_likes WHERE user_id = ?`
+	iter := s.session.Query(query, userID).Iter()
+	for iter.Scan(&songID) {
+		songIDs = append(songIDs, songID)
+	}
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	if len(songIDs) == 0 {
+		return []models.Song{}, nil
+	}
+
+	var likedSongs []models.Song
+	query = `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs WHERE song_id IN ?`
+	iter = s.session.Query(query, songIDs).Iter()
+	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL, &song.PlayCount) {
+		var song models.Song
+		likedSongs = append(likedSongs, song)
+	}
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	return likedSongs, nil
 }

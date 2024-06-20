@@ -163,13 +163,6 @@ func StreamMusic(dbService database.ScyllaService, minioService database.MinIOSe
 		defer object.Close()
 
 		helper.ServeContent(c.Response().Writer, c.Request(), objectName, time.Now(), object)
-		go func() {
-			if err := dbService.IncrementPlayCount(songID); err != nil {
-				fmt.Printf("Error incrementing play count: %v\n", err)
-				// TODO: Implement proper logging or error tracking mechanism
-			}
-		}()
-
 		return nil
 	}
 }
@@ -237,5 +230,17 @@ func UnlikeSongHandler(dbService database.ScyllaService) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, echo.Map{
 			"message": "Song unliked successfully",
 		})
+	}
+}
+
+func GetLikedSongsHandler(dbService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userID := c.Get("userID").(string)
+		likedSongs, err := dbService.GetLikedSongsByUser(userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get liked songs")
+		}
+
+		return c.JSON(http.StatusOK, likedSongs)
 	}
 }
