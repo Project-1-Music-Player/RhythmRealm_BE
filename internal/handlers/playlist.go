@@ -91,6 +91,24 @@ func RemoveSongFromPlaylistHandler(scyllaService database.ScyllaService) echo.Ha
 	}
 }
 
+func GetSongsInPlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		playlistID := c.Param("playlist_id")
+
+		playlistUUID, err := gocql.ParseUUID(playlistID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid playlist ID")
+		}
+
+		playllistSongs, err := scyllaService.GetSongsInPlaylist(playlistUUID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get liked songs")
+		}
+
+		return c.JSON(http.StatusOK, playllistSongs)
+	}
+}
+
 func RemovePlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		playlistID := c.Param("playlist_id")

@@ -24,6 +24,7 @@ type ScyllaService interface {
 	AddPlaylist(playlistID gocql.UUID, userID, name, description string) error
 	AddSongToPlaylist(playlistID gocql.UUID, userID string, songID gocql.UUID, addedAt time.Time) error
 	RemoveSongFromPlaylist(playlistID gocql.UUID, songID gocql.UUID) error
+	GetSongsInPlaylist(playlistID gocql.UUID) ([]models.Song, error)
 	FetchPlaylists(userID string) ([]models.Playlist, error)
 	RemovePlaylist(playlistID gocql.UUID) error
 
@@ -189,6 +190,40 @@ func (s *scyllaService) RemoveSongFromPlaylist(playlistID gocql.UUID, songID goc
 		return err
 	}
 	return nil
+}
+
+func (s *scyllaService) GetSongsInPlaylist(playlistID gocql.UUID) ([]models.Song, error) {
+	query := `SELECT song_id FROM playlist_songs WHERE playlist_id = ?`
+	iter := s.session.Query(query, playlistID).Iter()
+
+	var songIDs []gocql.UUID
+	var songID gocql.UUID
+	for iter.Scan(&songID) {
+		songIDs = append(songIDs, songID)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	if len(songIDs) == 0 {
+		return []models.Song{}, nil
+	}
+
+	query = `SELECT song_id, title, user_id, album, release_date, genre, song_url, thumbnail_url, play_count FROM songs WHERE song_id IN ?`
+	iter = s.session.Query(query, songIDs).Iter()
+
+	var songs []models.Song
+	var song models.Song
+	for iter.Scan(&song.SongID, &song.Title, &song.UserID, &song.Album, &song.ReleaseDate, &song.Genre, &song.SongURL, &song.ThumbnailURL, &song.PlayCount) {
+		songs = append(songs, song)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	return songs, nil
 }
 
 func (s *scyllaService) FetchPlaylists(userID string) ([]models.Playlist, error) {
