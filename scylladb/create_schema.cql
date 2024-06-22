@@ -42,10 +42,10 @@ CREATE TABLE IF NOT EXISTS playlists (
 
 CREATE TABLE IF NOT EXISTS playlist_songs (
     playlist_id UUID,
-    added_at TIMESTAMP,
     song_id UUID,
-    PRIMARY KEY (playlist_id, added_at)
-) WITH CLUSTERING ORDER BY (added_at ASC);
+    added_at TIMESTAMP,
+    PRIMARY KEY (playlist_id, song_id)
+)
 
 CREATE TABLE song_play_counts (
   song_id UUID,
