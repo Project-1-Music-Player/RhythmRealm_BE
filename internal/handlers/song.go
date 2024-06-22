@@ -130,8 +130,8 @@ func GetAllSongs(dbService database.ScyllaService) echo.HandlerFunc {
 
 		return c.JSON(http.StatusOK, songs)
 	}
-
 }
+
 func GetSongThumbnail(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		songID := c.Param("song_id")
@@ -148,6 +148,7 @@ func GetSongThumbnail(dbService database.ScyllaService, minioService database.Mi
 		return nil
 	}
 }
+
 func StreamMusic(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		songID := c.Param("song_id")
@@ -166,6 +167,7 @@ func StreamMusic(dbService database.ScyllaService, minioService database.MinIOSe
 		return nil
 	}
 }
+
 func SearchSongs(dbService database.ScyllaService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		searchQuery := c.QueryParam("q")

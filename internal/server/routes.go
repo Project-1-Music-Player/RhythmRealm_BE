@@ -31,6 +31,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.POST("/music/upload", handlers.UploadMusicHandler(s.db, s.musicService), mdw.JWTMiddleware)
 	e.GET("/music", handlers.GetSongsByUser(s.db), mdw.JWTMiddleware)
+	e.DELETE("/music/:song_id/remove", handlers.RemoveSongHandler(s.db, s.musicService), mdw.JWTMiddleware)
 	e.GET("/music/stream/:song_id", handlers.StreamMusic(s.db, s.musicService))
 	e.GET("/music/search", handlers.SearchSongs(s.db))
 	e.GET("/music/thumbnail/:song_id", handlers.GetSongThumbnail(s.db, s.musicService))
@@ -41,6 +42,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	e.GET("/playlists", handlers.FetchPlaylistsHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/playlists", handlers.AddPlaylistHandler(s.db), mdw.JWTMiddleware)
+	e.PUT("/playlists/:playlist_id", handlers.UpdatePlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.DELETE("/playlists/:playlist_id", handlers.RemovePlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.POST("/playlists/:playlist_id/songs/:song_id", handlers.AddSongToPlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.DELETE("/playlists/:playlist_id/songs/:song_id", handlers.RemoveSongFromPlaylistHandler(s.db), mdw.JWTMiddleware)

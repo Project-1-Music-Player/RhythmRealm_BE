@@ -40,6 +40,31 @@ func AddPlaylistHandler(dbService database.ScyllaService) echo.HandlerFunc {
 	}
 }
 
+func UpdatePlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		playlistID := c.Param("playlist_id")
+
+		playlistUUID, err := gocql.ParseUUID(playlistID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid playlist ID")
+		}
+
+		var updateData models.Playlist
+		if err := c.Bind(&updateData); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+		}
+
+		err = scyllaService.UpdatePlaylist(playlistUUID, updateData.Name, updateData.Description)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update playlist")
+		}
+
+		return c.JSON(http.StatusCreated, echo.Map{
+			"message": "Update playlist successfully",
+		})
+	}
+}
+
 func AddSongToPlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		playlistID := c.Param("playlist_id")

@@ -22,6 +22,7 @@ type ScyllaService interface {
 	SearchSongs(query string, limit, offset int) ([]models.Song, error)
 
 	AddPlaylist(playlistID gocql.UUID, userID, name, description string) error
+	UpdatePlaylist(playlistID gocql.UUID, name, description string) error
 	AddSongToPlaylist(playlistID gocql.UUID, userID string, songID gocql.UUID, addedAt time.Time) error
 	RemoveSongFromPlaylist(playlistID gocql.UUID, songID gocql.UUID) error
 	GetSongsInPlaylist(playlistID gocql.UUID) ([]models.Song, error)
@@ -169,6 +170,15 @@ func (s *scyllaService) SearchSongs(query string, limit, offset int) ([]models.S
 func (s *scyllaService) AddPlaylist(playlistID gocql.UUID, userID, name, description string) error {
 	query := `INSERT INTO playlists (playlist_id, user_id, name, description) VALUES (?, ?, ?, ?)`
 	if err := s.session.Query(query, playlistID, userID, name, description).Exec(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *scyllaService) UpdatePlaylist(playlistID gocql.UUID, name, description string) error {
+	query := `UPDATE playlists SET name = ?, description = ? WHERE playlist_id = ?`
+	if err := s.session.Query(query, name, description, playlistID).Exec(); err != nil {
+		log.Printf("Failed to update playlist: %v", err)
 		return err
 	}
 	return nil
