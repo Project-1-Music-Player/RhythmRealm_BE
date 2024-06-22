@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS playlist_songs (
     song_id UUID,
     added_at TIMESTAMP,
     PRIMARY KEY (playlist_id, song_id)
-)
+);
 
 CREATE TABLE song_play_counts (
   song_id UUID,
