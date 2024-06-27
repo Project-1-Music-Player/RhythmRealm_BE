@@ -12,6 +12,7 @@ import (
 type ScyllaService interface {
 	Health() map[string]string
 	UpsertUser(userID, username, email, role string) error
+	GetUserByID(userID string) (*models.User, error)
 
 	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
 	RemoveSong(songID gocql.UUID) error
@@ -32,6 +33,8 @@ type ScyllaService interface {
 	LikeSong(userID string, songID gocql.UUID) error
 	UnlikeSong(userID string, songID gocql.UUID) error
 	GetLikedSongsByUser(userID string) ([]models.Song, error)
+
+	GetSongUserID(songID gocql.UUID) (string, error)
 }
 
 type scyllaService struct {
@@ -319,4 +322,28 @@ func (s *scyllaService) GetLikedSongsByUser(userID string) ([]models.Song, error
 	}
 
 	return likedSongs, nil
+}
+
+func (s *scyllaService) GetUserByID(userID string) (*models.User, error) {
+	var user models.User
+	query := `SELECT user_id, username, email, role FROM users WHERE user_id = ? LIMIT 1`
+	if err := s.session.Query(query, userID).Scan(&user.UserID, &user.Username, &user.Email, &user.Role); err != nil {
+		if err == gocql.ErrNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *scyllaService) GetSongUserID(songID gocql.UUID) (string, error) {
+	var userID string
+	query := `SELECT user_id FROM songs WHERE song_id = ? LIMIT 1`
+	if err := s.session.Query(query, songID).Scan(&userID); err != nil {
+		if err == gocql.ErrNotFound {
+			return "", nil
+		}
+		return "", err
+	}
+	return userID, nil
 }

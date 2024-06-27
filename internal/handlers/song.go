@@ -82,6 +82,8 @@ func UploadMusicHandler(dbService database.ScyllaService, minioService database.
 func RemoveSongHandler(dbService database.ScyllaService, minioService database.MinIOService) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		songID := c.Param("song_id")
+		userID := c.Get("userID").(string)
+
 		objectName, err := dbService.GetObjectNameBySongID(songID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get song")
@@ -92,6 +94,22 @@ func RemoveSongHandler(dbService database.ScyllaService, minioService database.M
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid song ID")
 		}
 
+		user, err := dbService.GetUserByID(userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
+		}
+		if user == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+		}
+
+		songOwnerID, err := dbService.GetSongUserID(songUUID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get song owner")
+		}
+		if user.Role != "admin" && userID != songOwnerID {
+			return echo.NewHTTPError(http.StatusForbidden, "Unauthorized to delete this song")
+		}
+
 		err = dbService.RemoveSong(songUUID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove song")
@@ -99,7 +117,7 @@ func RemoveSongHandler(dbService database.ScyllaService, minioService database.M
 
 		err = minioService.RemoveObject("music", objectName)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove song from storage")
+			echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove song from storage")
 		}
 
 		return c.JSON(http.StatusOK, echo.Map{
