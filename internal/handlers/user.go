@@ -31,3 +31,18 @@ func UpsertUserHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
 		})
 	}
 }
+
+func PromoteListenerToArtistHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		listenerID := c.Get("userID").(string)
+
+		err := scyllaService.UpdateUserRole(listenerID, "artist")
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to promote listener to artist")
+		}
+
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "Listener promoted to artist successfully",
+		})
+	}
+}

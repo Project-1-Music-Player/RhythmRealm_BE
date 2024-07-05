@@ -13,6 +13,7 @@ type ScyllaService interface {
 	Health() map[string]string
 	UpsertUser(userID, username, email, role string) error
 	GetUserByID(userID string) (*models.User, error)
+	UpdateUserRole(userID, role string) error
 
 	InsertSong(songID gocql.UUID, title, userID, album string, releaseDate time.Time, genre, songURL, thumbnailURL string) error
 	RemoveSong(songID gocql.UUID) error
@@ -346,4 +347,12 @@ func (s *scyllaService) GetSongUserID(songID gocql.UUID) (string, error) {
 		return "", err
 	}
 	return userID, nil
+}
+
+func (s *scyllaService) UpdateUserRole(userID, role string) error {
+	query := "UPDATE users SET role = ? WHERE user_id = ?"
+	if err := s.session.Query(query, role, userID).Exec(); err != nil {
+		return err
+	}
+	return nil
 }

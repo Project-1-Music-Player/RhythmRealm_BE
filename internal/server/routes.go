@@ -28,6 +28,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.POST("/auth/google", handlers.UpsertUserHandler(s.db), mdw.JWTMiddleware)
 
 	// TODO: Add endpoint for user profile
+	e.PUT("/user/promote", handlers.PromoteListenerToArtistHandler(s.db), mdw.JWTMiddleware)
 
 	e.POST("/music/upload", handlers.UploadMusicHandler(s.db, s.musicService), mdw.JWTMiddleware)
 	e.GET("/music", handlers.GetSongsByUser(s.db), mdw.JWTMiddleware)
