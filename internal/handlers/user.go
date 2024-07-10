@@ -46,3 +46,16 @@ func PromoteListenerToArtistHandler(scyllaService database.ScyllaService) echo.H
 		})
 	}
 }
+
+func GetUserInfoHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userID := c.Get("userID").(string)
+
+		user, err := scyllaService.GetUserByID(userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get user")
+		}
+
+		return c.JSON(http.StatusOK, user)
+	}
+}

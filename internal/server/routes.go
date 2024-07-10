@@ -29,6 +29,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// TODO: Add endpoint for user profile
 	e.PUT("/user/promote", handlers.PromoteListenerToArtistHandler(s.db), mdw.JWTMiddleware)
+	e.GET("/user/info", handlers.GetUserInfoHandler(s.db), mdw.JWTMiddleware)
 
 	e.POST("/music/upload", handlers.UploadMusicHandler(s.db, s.musicService), mdw.JWTMiddleware)
 	e.GET("/music", handlers.GetSongsByUser(s.db), mdw.JWTMiddleware)
