@@ -4,6 +4,8 @@ services:
     container_name: scylla
     ports:
       - "9042:9042"
+    volumes:
+      - scylla_data:/var/lib/scylla
 
   # This is a temporary service that creates the schema and populates the scylla service and then this one shuts down
   scylla-load-keyspace:
@@ -52,3 +54,5 @@ services:
     depends_on:
       minio:
         condition: service_healthy 
+volumes:
+  scylla_data:
