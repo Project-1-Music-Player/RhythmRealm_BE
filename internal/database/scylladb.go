@@ -36,6 +36,13 @@ type ScyllaService interface {
 	GetLikedSongsByUser(userID string) ([]models.Song, error)
 
 	GetSongUserID(songID gocql.UUID) (string, error)
+
+	GetAllArtists() ([]models.Artist, error)
+	GetArtistWithSongs(artistID string) (*models.ArtistWithSongs, error)
+	FollowArtist(artistID string, followerID string) error
+	UnfollowArtist(artistID string, followerID string) error
+	GetFollowedArtists(userID string) ([]models.Artist, error)
+	GetArtistFollowersCount(artistID string) (int, error)
 }
 
 type scyllaService struct {
@@ -355,4 +362,114 @@ func (s *scyllaService) UpdateUserRole(userID, role string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *scyllaService) GetAllArtists() ([]models.Artist, error) {
+	query := `SELECT user_id, username, email, role FROM users WHERE role = 'artist' ALLOW FILTERING`
+	iter := s.session.Query(query).Iter()
+
+	var artists []models.Artist
+	var artist models.Artist
+	for iter.Scan(&artist.UserID, &artist.Username, &artist.Email, &artist.Role) {
+		// Get followers count for each artist
+		followers, err := s.GetArtistFollowersCount(artist.UserID)
+		if err != nil {
+			return nil, err
+		}
+		artist.Followers = followers
+		artists = append(artists, artist)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	return artists, nil
+}
+
+func (s *scyllaService) GetArtistWithSongs(artistID string) (*models.ArtistWithSongs, error) {
+	// Get artist info
+	var artist models.Artist
+	query := `SELECT user_id, username, email, role FROM users WHERE user_id = ? LIMIT 1`
+	if err := s.session.Query(query, artistID).Scan(&artist.UserID, &artist.Username, &artist.Email, &artist.Role); err != nil {
+		return nil, err
+	}
+
+	// Get followers count
+	followers, err := s.GetArtistFollowersCount(artistID)
+	if err != nil {
+		return nil, err
+	}
+	artist.Followers = followers
+
+	// Get artist's songs
+	songs, err := s.GetSongsByUserID(artistID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.ArtistWithSongs{
+		Artist: artist,
+		Songs:  songs,
+	}, nil
+}
+
+func (s *scyllaService) FollowArtist(artistID string, followerID string) error {
+	query := `INSERT INTO artist_followers (artist_id, follower_id, followed_at) VALUES (?, ?, ?)`
+	return s.session.Query(query, artistID, followerID, time.Now()).Exec()
+}
+
+func (s *scyllaService) UnfollowArtist(artistID string, followerID string) error {
+	query := `DELETE FROM artist_followers WHERE artist_id = ? AND follower_id = ?`
+	return s.session.Query(query, artistID, followerID).Exec()
+}
+
+func (s *scyllaService) GetFollowedArtists(userID string) ([]models.Artist, error) {
+	// First get all artist IDs that the user follows
+	query := `SELECT artist_id FROM artist_followers WHERE follower_id = ?`
+	iter := s.session.Query(query, userID).Iter()
+
+	var artistIDs []string
+	var artistID string
+	for iter.Scan(&artistID) {
+		artistIDs = append(artistIDs, artistID)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	if len(artistIDs) == 0 {
+		return []models.Artist{}, nil
+	}
+
+	// Then get artist details for each ID
+	var artists []models.Artist
+	for _, id := range artistIDs {
+		var artist models.Artist
+		query := `SELECT user_id, username, email, role FROM users WHERE user_id = ? LIMIT 1`
+		if err := s.session.Query(query, id).Scan(&artist.UserID, &artist.Username, &artist.Email, &artist.Role); err != nil {
+			continue
+		}
+		
+		// Get followers count
+		followers, err := s.GetArtistFollowersCount(id)
+		if err != nil {
+			continue
+		}
+		artist.Followers = followers
+		
+		artists = append(artists, artist)
+	}
+
+	return artists, nil
+}
+
+func (s *scyllaService) GetArtistFollowersCount(artistID string) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM artist_followers WHERE artist_id = ?`
+	if err := s.session.Query(query, artistID).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }

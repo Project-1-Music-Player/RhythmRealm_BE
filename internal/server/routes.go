@@ -50,6 +50,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	e.DELETE("/playlists/:playlist_id/songs/:song_id", handlers.RemoveSongFromPlaylistHandler(s.db), mdw.JWTMiddleware)
 	e.GET("/playlists/:playlist_id/songs", handlers.GetSongsInPlaylistHandler(s.db), mdw.JWTMiddleware)
 
+	// Artist routes
+	e.GET("/artists", handlers.GetAllArtistsHandler(s.db))
+	e.GET("/artists/:artist_id", handlers.GetArtistWithSongsHandler(s.db))
+	e.POST("/artists/:artist_id/follow", handlers.FollowArtistHandler(s.db), mdw.JWTMiddleware)
+	e.DELETE("/artists/:artist_id/follow", handlers.UnfollowArtistHandler(s.db), mdw.JWTMiddleware)
+	e.GET("/artists/followed", handlers.GetFollowedArtistsHandler(s.db), mdw.JWTMiddleware)
+
 	return e
 }
 

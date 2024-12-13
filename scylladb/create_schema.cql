@@ -64,3 +64,12 @@ CREATE INDEX song_likes_by_song ON song_likes (song_id);
 CREATE INDEX IF NOT EXISTS playlists_user_id_idx ON playlists(user_id);
 
 CREATE INDEX IF NOT EXISTS songs_user_id_idx ON songs(user_id);
+
+CREATE TABLE IF NOT EXISTS artist_followers (
+    artist_id TEXT,
+    follower_id TEXT,
+    followed_at TIMESTAMP,
+    PRIMARY KEY (artist_id, follower_id)
+);
+
+CREATE INDEX IF NOT EXISTS followers_by_follower ON artist_followers (follower_id);
