@@ -54,5 +54,15 @@ services:
     depends_on:
       minio:
         condition: service_healthy 
+  recommender-api:
+    build: ./music-emotion-recommender
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./music-emotion-recommender:/app
+    environment:
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+    restart: unless-stopped
 volumes:
   scylla_data:
