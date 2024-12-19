@@ -1,0 +1,1 @@
+1|http://localhost:8000/api/recommend/emotion/peaceful?page=1&page_size=10 
