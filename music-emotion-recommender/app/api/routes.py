@@ -5,6 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 from app.models.schemas import SongResponse
 from app.db.database import db_pool
 from app.services.spotify import get_spotify_track_infos
+from app.services.vad_predictor import vad_predictor
 
 router = APIRouter()
 
@@ -200,4 +201,72 @@ async def recommend_by_multiple_tags(
             return results
 
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/recommend/emotion/{emotion_tag}", response_model=List[SongResponse])
+async def recommend_by_emotion(
+    emotion_tag: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    include_spotify_info: bool = Query(True)
+):
+    """Get song recommendations based on emotional word"""
+    try:
+        # Get VAD values for the emotion tag
+        vad_values = vad_predictor.get_vad_values(emotion_tag)
+        valence, arousal, dominance = vad_values
+        
+        with db_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            query = '''
+            SELECT 
+                s.*,
+                (1 - ABS(s.valence - ?)) * 0.4 +
+                (1 - ABS(s.arousal - ?)) * 0.4 +
+                (1 - ABS(s.dominance - ?)) * 0.2 as emotion_score
+            FROM songs s
+            ORDER BY emotion_score DESC
+            LIMIT ? OFFSET ?
+            '''
+            
+            cursor.execute(query, (
+                valence,
+                arousal,
+                dominance,
+                page_size,
+                (page - 1) * page_size
+            ))
+            
+            results = []
+            spotify_ids = []
+            
+            for row in cursor.fetchall():
+                spotify_id = row[4]
+                if spotify_id:
+                    spotify_ids.append(spotify_id)
+                
+                results.append({
+                    'track': row[1],
+                    'artist': row[2],
+                    'genre': row[3],
+                    'spotify_id': spotify_id,
+                    'tags': json.loads(row[5]),
+                    'score': float(row[12]),
+                    'valence': float(row[6]),
+                    'arousal': float(row[7]),
+                    'dominance': float(row[8]),
+                    'spotify_info': None
+                })
+            
+            if results and include_spotify_info and spotify_ids:
+                spotify_info_map = get_spotify_track_infos(spotify_ids)
+                for result in results:
+                    if result['spotify_id']:
+                        result['spotify_info'] = spotify_info_map.get(result['spotify_id'])
+            
+            return results
+            
+    except Exception as e:
+        print(f"Error in recommend_by_emotion: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
