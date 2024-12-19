@@ -12,7 +12,10 @@ import (
 
 func FetchPlaylistsHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		userID := c.Get("userID").(string)
+		userID := c.Param("user_id")
+		if userID == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "User ID is missing?")
+		}
 
 		playlists, err := scyllaService.FetchPlaylists(userID)
 		if err != nil {
@@ -150,18 +153,5 @@ func RemovePlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFun
 		return c.JSON(http.StatusOK, echo.Map{
 			"message": "Playlist removed successfully",
 		})
-	}
-}
-
-func GetArtistPlaylistsHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		artistID := c.Param("artist_id")
-
-		playlists, err := scyllaService.FetchPlaylistsByArtist(artistID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch artist playlists")
-		}
-
-		return c.JSON(http.StatusOK, playlists)
 	}
 }
