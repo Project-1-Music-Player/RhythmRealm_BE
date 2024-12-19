@@ -152,3 +152,16 @@ func RemovePlaylistHandler(scyllaService database.ScyllaService) echo.HandlerFun
 		})
 	}
 }
+
+func GetArtistPlaylistsHandler(scyllaService database.ScyllaService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		artistID := c.Param("artist_id")
+
+		playlists, err := scyllaService.FetchPlaylistsByArtist(artistID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch artist playlists")
+		}
+
+		return c.JSON(http.StatusOK, playlists)
+	}
+}

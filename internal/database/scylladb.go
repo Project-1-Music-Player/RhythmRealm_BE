@@ -29,6 +29,7 @@ type ScyllaService interface {
 	RemoveSongFromPlaylist(playlistID gocql.UUID, songID gocql.UUID) error
 	GetSongsInPlaylist(playlistID gocql.UUID) ([]models.Song, error)
 	FetchPlaylists(userID string) ([]models.Playlist, error)
+	FetchPlaylistsByArtist(artistID string) ([]models.Playlist, error)
 	RemovePlaylist(playlistID gocql.UUID) error
 
 	LikeSong(userID string, songID gocql.UUID) error
@@ -267,6 +268,32 @@ func (s *scyllaService) FetchPlaylists(userID string) ([]models.Playlist, error)
 
 	if err := iter.Close(); err != nil {
 		log.Printf("Failed to fetch playlists: %v", err)
+		return nil, err
+	}
+
+	return playlists, nil
+}
+
+func (s *scyllaService) FetchPlaylistsByArtist(artistID string) ([]models.Playlist, error) {
+	query := `SELECT playlist_id, name, description FROM playlists WHERE user_id = ?`
+	iter := s.session.Query(query, artistID).Iter()
+
+	var playlists []models.Playlist
+	var playlistID gocql.UUID
+	var name string
+	var description string
+
+	for iter.Scan(&playlistID, &name, &description) {
+		playlists = append(playlists, models.Playlist{
+			PlaylistID:  playlistID,
+			UserID:      artistID,
+			Name:        name,
+			Description: description,
+		})
+	}
+
+	if err := iter.Close(); err != nil {
+		log.Printf("Failed to fetch artist playlists: %v", err)
 		return nil, err
 	}
 
