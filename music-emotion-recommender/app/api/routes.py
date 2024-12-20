@@ -123,7 +123,8 @@ async def recommend_by_multiple_tags(
     page_size: int = Query(10, ge=1, le=50),
     valence: Optional[float] = None,
     arousal: Optional[float] = None,
-    dominance: Optional[float] = None
+    dominance: Optional[float] = None,
+    include_spotify_info: bool = Query(True)
 ):
     """
     Recommend songs based on multiple tags and optional emotion parameters with pagination
@@ -165,7 +166,6 @@ async def recommend_by_multiple_tags(
             LIMIT ? OFFSET ?
             '''
 
-            # Normalize emotion values if provided
             use_emotions = all(v is not None for v in [valence, arousal, dominance])
             if use_emotions:
                 scaler = MinMaxScaler()
@@ -182,25 +182,39 @@ async def recommend_by_multiple_tags(
             ))
 
             results = []
+            spotify_ids = []
+            
             for row in cursor.fetchall():
+                spotify_id = row[4]
+                if spotify_id:
+                    spotify_ids.append(spotify_id)
+                
                 results.append({
                     'track': row[1],
                     'artist': row[2],
                     'genre': row[3],
-                    'spotify_id': row[4],
+                    'spotify_id': spotify_id,
                     'tags': json.loads(row[5]),
                     'score': float(row[14]),  # final_score
                     'valence': float(row[6]),
                     'arousal': float(row[7]),
-                    'dominance': float(row[8])
+                    'dominance': float(row[8]),
+                    'spotify_info': None  # Will be populated later
                 })
 
             if not results:
                 raise HTTPException(status_code=404, detail=f"No songs found with tags: {tags}")
 
+            if include_spotify_info and spotify_ids:
+                spotify_info_map = get_spotify_track_infos(spotify_ids)
+                for result in results:
+                    if result['spotify_id']:
+                        result['spotify_info'] = spotify_info_map.get(result['spotify_id'])
+
             return results
 
     except Exception as e:
+        print(f"Error in recommend_by_multiple_tags: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/recommend/emotion/{emotion_tag}", response_model=List[SongResponse])
